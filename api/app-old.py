@@ -1,11 +1,8 @@
 from flask import Flask, jsonify, request
-
 import numpy as np
 import cv2
 import base64
 import subprocess
-import tensorflow as tf
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -21,28 +18,20 @@ def tongueDiagnosis():
 def receive_data():
     print("======")
     print(request.files)
-    model = tf.keras.models.load_model('unet_tongue_segmentation.h5')
 
     all_data = []
     for i in request.files:
         file_path = request.files[i]
 
         img = file_path.read()
+        
         nparr = np.fromstring (img, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
         cv2.imwrite(filename= 'test.jpg', img=img)
 
-        # Unet Pred
-        nparr = np.expand_dims(nparr, axis=0)
-        pred_mask = model.predict(nparr)
-        pred_mask_t = (pred_mask > 0.5).astype(np.uint8)
-        img = cv2.bitwise_and(img, img, mask = pred_mask_t[0])
-
-
         # Processing on the image
-        #subprocess.call(['../main-rpi4', 'test.jpg'])
-        #img = cv2.imread("output_images/im(segmented)-rpi.png") # Reading the image again to send the output
+        subprocess.call(['../main-rpi4', 'test.jpg'])
+        img = cv2.imread("output_images/im(segmented)-rpi.png")
 
         _, img_process_encoded = cv2.imencode('.jpg', img)
         pimg_process_encodeed_64 = base64.b64encode(img_process_encoded).decode('utf8')

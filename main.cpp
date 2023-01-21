@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     int imageArgumentIdx = 1;
 
     // Reads the image.
-    Mat imagereceive_data = imread(argv[imageArgumentIdx]);
+    Mat image = imread(argv[imageArgumentIdx]);
     if (!image.data)
     {
         cout << "Image not found or empty" << endl;
