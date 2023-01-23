@@ -27,29 +27,37 @@ def receive_data():
     for i in request.files:
         file_path = request.files[i]
 
-        img = file_path.read()
-        nparr = np.fromstring (img, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        cv2.imwrite(filename= 'test.jpg', img=img)
+        img = file_path.read() # Getting image data
+        nparr = np.fromstring (img, np.uint8) # Read from a string and convert to np array
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR) # Convert to a matrix format
+        img = cv2.resize(img, (128, 128)) # Resize the image after the conversion
+        
+        cv2.imwrite(filename= 'test.jpg', img=img) # save the image in the disk, for the cpp program
 
         # Unet Pred
-        nparr = np.expand_dims(nparr, axis=0)
+        nparr = np.expand_dims(img, axis=0)
         pred_mask = model.predict(nparr)
         pred_mask_t = (pred_mask > 0.5).astype(np.uint8)
-        img = cv2.bitwise_and(img, img, mask = pred_mask_t[0])
+        segUnetImg = cv2.bitwise_and(img, img, mask = pred_mask_t[0])
 
 
-        # Processing on the image
-        #subprocess.call(['../main-rpi4', 'test.jpg'])
-        #img = cv2.imread("output_images/im(segmented)-rpi.png") # Reading the image again to send the output
+        # Threshold Pred
+        subprocess.call(['../main-rpi4', 'test.jpg'])
+        thresholdSegImg = cv2.imread("output_images/im(segmented)-rpi.png") # Reading the image again to send the output
 
-        _, img_process_encoded = cv2.imencode('.jpg', img)
-        pimg_process_encodeed_64 = base64.b64encode(img_process_encoded).decode('utf8')
+
+        # Encode image data to base64
+        _, unet_process_encoded = cv2.imencode('.jpg', segUnetImg) 
+        _, threshold_process_encoded = cv2.imencode('.jpg', thresholdSegImg)
+
+        unet_encodeed_64 = base64.b64encode(unet_process_encoded).decode('utf8')
+        threshold_encoded_64 = base64.b64encode(threshold_process_encoded).decode('utf8')
 
         save_data = {
-            "result_image": pimg_process_encodeed_64,
+            "unet_result": unet_encodeed_64,
+            "threshold_result": threshold_encoded_64
         }
+
         all_data.append(save_data)
     return jsonify(all_data)
 
